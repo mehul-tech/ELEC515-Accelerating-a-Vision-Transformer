@@ -1,1 +1,1 @@
-# ELEC515-Accelerating-a-Vision-Transformer
+# ELEC515: Accelerating a Vision Transformer in Hardware
