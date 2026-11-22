@@ -1,0 +1,17 @@
+# Conda environment for the ViT accelerator project (Linux, macOS, and Windows via WSL2).
+# Create it once with
+#   conda env create -f environment.yml
+# and activate it in every new terminal with
+#   conda activate vit-accel
+name: vit-accel
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.12
+  - numpy
+  - pytorch-cpu        # PyTorch, CPU build (a GPU is not needed)
+  - torchvision
+  - verilator>=5.0     # the RTL simulator
+  - make               # used by Verilator to build the simulator
+  - cxx-compiler       # C++ compiler used by Verilator
