@@ -37,7 +37,10 @@ def weight_scale(weight, per_channel):
     # HINT: per tensor, use the largest |w| of the whole matrix and repeat it for every row.
     # HINT: return a numpy array of length out_features (w.shape[0]); avoid zero scales
     # HINT: (clamp_min). Two lines: the per-row maxima, then the scale.
-    raise NotImplementedError("TODO (1): compute the symmetric INT8 weight scales")
+    max_abs = w.max(dim=1).values if per_channel \
+        else w.max().expand(w.shape[0])
+
+    return (max_abs / QMAX).clamp_min(1e-12).cpu().numpy()
 
 
 # Calibration observer, attached to a layer with register_forward_pre_hook: it is called with
@@ -51,7 +54,7 @@ class InputRange:
         # TODO (2): update the running maximum of the input magnitude
         # HINT: set self.max_abs to the larger of self.max_abs and max|x| of this batch, as a
         # HINT: Python float (.item()). One line.
-        raise NotImplementedError("TODO (2): update the running maximum of the input magnitude")
+        self.max_abs = max(self.max_abs, x.abs().max().item())
 
 
 # The 30 quantized layers, as (name, nn.Linear) pairs; names match vit_fixed.QLAYERS.
@@ -99,7 +102,9 @@ def main():
         # HINT: symmetric INT8, so the largest input magnitude seen during calibration
         # HINT: (observers[name].max_abs) maps to QMAX = 127. Store the scale in
         # HINT: scales[name + ".x_scale"] as a 0-d numpy array (np.array(value)). One line.
-        raise NotImplementedError("TODO (3): the activation scale of this layer")
+        scales[name + ".x_scale"] = np.array(
+            max(observers[name].max_abs / QMAX, 1e-12)
+        )
         scales[name + ".w_scale"] = weight_scale(module.weight, not args.per_tensor_weights)
     out = output_path(args.out, "quant", ".npz")
     out.parent.mkdir(parents=True, exist_ok=True)

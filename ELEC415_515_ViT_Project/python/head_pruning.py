@@ -38,7 +38,8 @@ def head_importance(model, loader, device):
         # HINT: take its gradient with respect to `mask` (torch.autograd.grad(loss, mask)
         # HINT: returns a tuple), and add the absolute value to `importance`. One line for the
         # HINT: loss, one for the accumulation.
-        raise NotImplementedError("TODO (1): accumulate the gradient magnitude of the loss w.r.t. the head gates")
+        loss = criterion(model(x.to(device)), y.to(device))
+        importance += torch.autograd.grad(loss, mask)[0].abs().detach()
         batches += 1
     model.set_head_mask(None)
     importance = importance / batches
@@ -46,7 +47,9 @@ def head_importance(model, loader, device):
     # HINT: divide every row (one block) of `importance` by its L2 norm, so the four scores of
     # HINT: a block have unit length, and store the result in `normalized` (same shape).
     # HINT: Guard against division by zero (e.g. clamp_min(1e-12)). One line.
-    raise NotImplementedError("TODO (2): L2-normalize the importance scores within each block")
+    normalized = importance / torch.linalg.vector_norm(
+        importance, dim=1, keepdim=True
+    ).clamp_min(1e-12)
     return importance.cpu(), normalized.cpu()
 
 
@@ -80,7 +83,11 @@ def main():
     # HINT: build a list `ranking` of tuples (normalized score as a float, block index l, head
     # HINT: index h) for all 6 x 4 heads, sorted in increasing order of the score; the loop below
     # HINT: unpacks it as (_, layer, head). The ranking is computed once, before pruning.
-    raise NotImplementedError("TODO (3): rank the 24 heads from least to most important")
+    ranking = sorted(
+        (float(normalized[l, h]), l, h)
+        for l in range(N_LAYERS)
+        for h in range(N_HEADS)
+    )
 
     # Mask heads one at a time in ranking order and measure the accuracy after each step.
     mask = torch.ones(N_LAYERS, N_HEADS)
